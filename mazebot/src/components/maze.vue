@@ -3,6 +3,23 @@
     <v-layout align-center justify-center>
       <v-flex>
         <div class="text-center">
+          <v-dialog
+            v-model="completeDialog"
+            max-width="400px"
+            persistent
+            ref="dialog"
+          >
+            <v-card>
+              <v-card-title class="headline; justify-center"
+                >Congratulations!</v-card-title
+              >
+              <v-card-text>{{ message }}</v-card-text>
+              <v-card-actions>
+                <v-spacer />
+                <v-btn @click="newGame">New Game</v-btn>
+              </v-card-actions>
+            </v-card>
+          </v-dialog>
           <canvas
             v-show="ready"
             ref="canvas"
@@ -22,11 +39,12 @@
 
 <script>
 import axios from "axios";
+
 export default {
   name: "maze",
-  components: {},
   data() {
     return {
+      isFinsihed: false,
       completed: null,
       completeDialog: false,
       ready: false,
@@ -57,18 +75,16 @@ export default {
     };
   },
   computed: {
-    isFinished() {
-      if (this.currentPos) {
-        return (
-          this.currentPos[0] === this.end[0] &&
-          this.currentPos[1] === this.end[1]
-        );
+    message() {
+      if (this.completed) {
+        return this.completed.message;
       }
       return null;
     }
   },
   methods: {
     resetGame() {
+      this.isFinsihed = false;
       this.map = null;
       this.route = "";
       this.start = null;
@@ -77,6 +93,7 @@ export default {
       this.currentPos = null;
     },
     newGame() {
+      this.completeDialog = false;
       this.resetGame();
       axios.get("/mazebot/random?minSize=10&maxSize=10").then(resp => {
         this.map = resp.data.map;
@@ -184,16 +201,28 @@ export default {
         this.context.fill();
 
         this.route += direction;
+
+        if (
+          this.currentPos[0] === this.end[0] &&
+          this.currentPos[1] === this.end[1]
+        ) {
+          this.isFinsihed = true;
+        }
       }
     },
     move(event) {
+      if (this.isFinsihed) {
+        return;
+      }
+
       let key_pressed = event.code;
       if (key_pressed in this.WSADMap) {
         this.update(this.WSADMap[key_pressed]);
       } else if (key_pressed in this.arrowMap) {
         this.update(this.arrowMap[key_pressed]);
       }
-      if (this.isFinished) {
+
+      if (this.isFinsihed) {
         axios
           .post(
             this.finish,
@@ -214,10 +243,4 @@ export default {
 };
 </script>
 
-<style scoped>
-.flex-center {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-</style>
+<style scoped></style>
