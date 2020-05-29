@@ -1,0 +1,138 @@
+{
+    "name": "Maze #200 (10x10)",
+    "mazePath": "/mazebot/mazes/Mm2hEPctAC8azVdq5rZLk4Ta3aGM1mdRCyn8RXOlwew",
+    "startingPosition": [
+        4,
+        6
+    ],
+    "endingPosition": [
+        8,
+        8
+    ],
+    "message": "When you have figured out the solution, post it back to this url in JSON format. See the exampleSolution for more information.",
+    "exampleSolution": {
+        "directions": "ENWNNENWNNS"
+    },
+    "map": [
+        [
+            " ",
+            " ",
+            " ",
+            " ",
+            " ",
+            " ",
+            " ",
+            " ",
+            "X",
+            "X"
+        ],
+        [
+            " ",
+            "X",
+            "X",
+            "X",
+            "X",
+            "X",
+            "X",
+            " ",
+            "X",
+            "X"
+        ],
+        [
+            "X",
+            " ",
+            " ",
+            " ",
+            " ",
+            " ",
+            "X",
+            " ",
+            " ",
+            " "
+        ],
+        [
+            " ",
+            " ",
+            "X",
+            " ",
+            "X",
+            " ",
+            "X",
+            " ",
+            "X",
+            " "
+        ],
+        [
+            " ",
+            "X",
+            "X",
+            " ",
+            "X",
+            " ",
+            " ",
+            " ",
+            "X",
+            " "
+        ],
+        [
+            " ",
+            " ",
+            " ",
+            " ",
+            "X",
+            "X",
+            "X",
+            "X",
+            " ",
+            " "
+        ],
+        [
+            " ",
+            "X",
+            "X",
+            "X",
+            "A",
+            " ",
+            " ",
+            " ",
+            "X",
+            " "
+        ],
+        [
+            " ",
+            " ",
+            " ",
+            " ",
+            " ",
+            "X",
+            "X",
+            "X",
+            "X",
+            " "
+        ],
+        [
+            "X",
+            " ",
+            "X",
+            " ",
+            "X",
+            " ",
+            " ",
+            " ",
+            "B",
+            " "
+        ],
+        [
+            "X",
+            "X",
+            "X",
+            "X",
+            "X",
+            "X",
+            "X",
+            " ",
+            "X",
+            "X"
+        ]
+    ]
+}

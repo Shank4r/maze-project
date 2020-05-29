@@ -10,8 +10,9 @@ CORS(app)
 @app.route('/getMaze', methods=['POST'])
 def getMaze():
     maze = request.get_json()["maze"]
-    fn.readMaze(maze)
-    return jsonify({"message": "hei verden"}), 200
+    test = fn.readMaze(maze)
+    shortestPath = fn.findShortestPath(test[0], test[1])
+    return jsonify({"path": shortestPath}), 200
 
 
 if __name__ == '__main__':

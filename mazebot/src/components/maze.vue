@@ -31,6 +31,8 @@
           >
           </canvas>
           <v-btn @click="newGame" v-if="!ready">New Game</v-btn>
+          <br />
+          <v-btn @click="solve" v-if="ready">Solve me!</v-btn>
         </div>
       </v-flex>
     </v-layout>
@@ -45,6 +47,7 @@ export default {
   name: "maze",
   data() {
     return {
+      solution: null,
       isFinsihed: false,
       completed: null,
       completeDialog: false,
@@ -84,7 +87,11 @@ export default {
     }
   },
   created() {
-    axios.post("http://localhost:5000/getMaze", { maze: JSON.parse(testmap) });
+    axios
+      .post("http://localhost:5000/getMaze", { maze: JSON.parse(testmap) })
+      .then(resp => {
+        this.solution = resp.data.path;
+      });
   },
   methods: {
     resetGame() {
@@ -229,21 +236,40 @@ export default {
       }
 
       if (this.isFinsihed) {
-        axios
-          .post(
-            this.finish,
-            { directions: this.route },
-            {
-              headers: {
-                "Content-Type": "application/json"
-              }
-            }
-          )
-          .then(resp => {
-            this.completeDialog = true;
-            this.completed = resp.data;
-          });
+        this.showCompletionDialog();
       }
+    },
+    showCompletionDialog() {
+      axios
+        .post(
+          this.finish,
+          { directions: this.route },
+          {
+            headers: {
+              "Content-Type": "application/json"
+            }
+          }
+        )
+        .then(resp => {
+          this.completeDialog = true;
+          this.completed = resp.data;
+        });
+    },
+    solve() {
+      let i = 0;
+      this.loop(i);
+    },
+    loop: function(i) {
+      setTimeout(() => {
+        this.update(this.solution[i]);
+        if (this.isFinsihed) {
+          this.showCompletionDialog();
+        }
+        i++;
+        if (i < this.solution.length) {
+          this.loop(i);
+        }
+      }, 500);
     }
   }
 };
