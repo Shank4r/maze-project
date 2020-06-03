@@ -41,7 +41,8 @@
 
 <script>
 import axios from "axios";
-import testmap from "raw-loader!../assets/testmap.txt";
+//import testmap from "raw-loader!../assets/testmap5.txt";
+//import testmap from "raw-loader!../assets/new/map1.txt";
 
 export default {
   name: "maze",
@@ -86,13 +87,6 @@ export default {
       return null;
     }
   },
-  created() {
-    axios
-      .post("http://localhost:5000/getMaze", { maze: JSON.parse(testmap) })
-      .then(resp => {
-        this.solution = resp.data.path;
-      });
-  },
   methods: {
     resetGame() {
       this.isFinsihed = false;
@@ -106,18 +100,26 @@ export default {
     newGame() {
       this.completeDialog = false;
       this.resetGame();
-      // axios.get("/mazebot/random?minSize=10&maxSize=10").then(resp => {
-      let resp_data = JSON.parse(testmap);
-      this.map = resp_data.map;
-      this.start = resp_data.startingPosition;
-      this.end = resp_data.endingPosition;
-      this.finish = resp_data.mazePath;
-      this.ready = true;
+      axios.get("/mazebot/random?minSize=10&maxSize=10").then(resp => {
+        //let resp_data = JSON.parse(testmap);
+        this.map = resp.data.map;
+        this.start = resp.data.startingPosition;
+        this.end = resp.data.endingPosition;
+        this.finish = resp.data.mazePath;
+        this.ready = true;
 
-      this.loadGame();
-      this.canvas.focus();
-      // axios.post("http://localhost:5000/getMaze", { maze: resp.data });
-      //  });
+        this.loadGame();
+        this.canvas.focus();
+        axios
+          .post("http://localhost:5000/getMaze", {
+            map: this.map,
+            start: this.start,
+            end: this.end
+          })
+          .then(resp => {
+            this.solution = resp.data.path;
+          });
+      });
     },
     loadGame() {
       this.canvas = this.$refs.canvas;

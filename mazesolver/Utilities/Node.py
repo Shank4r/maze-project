@@ -16,6 +16,7 @@ class Node:
         self.f = inf
         self.neighbours = []
         self.parent = None
+        self.alternativeNodes = []
 
     def __lt__(self, other):
         return self.f < other.f
@@ -68,3 +69,9 @@ class Node:
 
     def get_parent(self):
         return self.parent
+
+    def set_alternativeNodes(self, nodeList):
+        self.alternativeNodes = nodeList
+
+    def get_alternativeNodes(self):
+        return self.alternativeNodes

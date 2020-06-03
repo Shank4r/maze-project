@@ -4,11 +4,7 @@ from heapdict import heapdict
 import numpy as np
 
 
-def readMaze(maze):
-    map = maze["map"]
-    start = maze["startingPosition"]
-    end = maze["endingPosition"]
-
+def readMaze(map, start, end):
     alreadyVisited = []
     nodeList = []
 
@@ -33,7 +29,7 @@ def readMaze(maze):
             if isBorder(map, row, col):
                 neighbourList = [neighbour for neighbour in neighbours if not isBorder(map, neighbour[0], neighbour[1])]
 
-                if len(neighbourList) >= 1:
+                if len(neighbourList) >= 1 or isBorderAndCorner(map, row, col):
                     map[row][col] = Node(row, col)
 
             else:
@@ -44,7 +40,7 @@ def readMaze(maze):
                     neighbourList = [neighbour for neighbour in neighbours if
                                      not isAlreadyVisited(alreadyVisited, neighbour[0], neighbour[1])]
 
-                    if len(neighbourList) >= 2:
+                    if len(neighbourList) >= 2 or len(neighbours) == 3:
                         map[row][col] = Node(row, col)
 
             currentPosition = map[row][col]
@@ -90,7 +86,6 @@ def calculateFinalPath(finalRoute):
     return finalPath
 
 
-
 def findShortestPath(startNode, endNode):
     candidateQueue = heapdict()
     alreadyVisited = []
@@ -105,7 +100,6 @@ def findShortestPath(startNode, endNode):
             finalRoute.append(currentNode)
             finalPath = calculateFinalPath(finalRoute)
             finalPath.reverse()
-            print("Funnet sluttnoden", currentNode)
             return finalPath
 
         neighbourNodes = currentNode.get_neighbours()
@@ -119,22 +113,74 @@ def findShortestPath(startNode, endNode):
             if currentNeighbour not in finalRoute:
                 candidateQueue[currentNeighbour] = currentNeighbour.get_f()
 
-        alternativeNodes = [x for x in currentNode.get_neighbourNodes() if x not in finalRoute]
-        nextNode = candidateQueue.peekitem()[0]
+        if len(candidateQueue) > 0:
+            nextNode = candidateQueue.peekitem()[0]
+        else:
+            currentNode.set_parent(finalRoute[-1])
+            parents_alternativeNodes, parent_node = checkAlternativeNodes(currentNode, alreadyVisited)
+            for node in parents_alternativeNodes:
+                node.set_parent(parent_node)
+                candidateQueue[node] = node.get_f()
+            while finalRoute[-1] != parent_node:
+                del finalRoute[-1]
+            continue
 
-        if nextNode in currentNode.get_neighbourNodes():
+        alternativeNodes = [x for x in currentNode.get_neighbourNodes() if x not in finalRoute and x is not nextNode]
+        currentNode.set_alternativeNodes(alternativeNodes)
+
+        if nextNode is endNode and nextNode in currentNode.get_neighbourNodes():
+            currentNode.set_parent(finalRoute[-1])
+            finalRoute.append(currentNode)
+            continue
+
+        elif nextNode in currentNode.get_neighbourNodes() and len(nextNode.get_neighbourNodes()) > 1 and not \
+                all(node in finalRoute for node in nextNode.get_neighbourNodes()):
             if len(finalRoute) > 0:
                 currentNode.set_parent(finalRoute[-1])
             finalRoute.append(currentNode)
-        elif len(alternativeNodes) > 0:
+
+        elif len(alternativeNodes) == 1:  # hvis ikkje eg har kobling til neste node??
+            if len(candidateQueue) > 1:
+                candidateQueue.popitem()
+                candidateQueue[alternativeNodes[0]] = candidateQueue.peekitem()[1] - 1
+                if len(finalRoute) > 0:
+                    currentNode.set_parent(finalRoute[-1])
+                finalRoute.append(currentNode)
+            continue
+
+        elif len(alternativeNodes) >= 1:
+            candidateQueue.popitem()
             for node in alternativeNodes:
                 if node in candidateQueue:
-                    continue
-            candidateQueue.popitem()
-            currentNode.set_parent(finalRoute[-1])
+                    candidateQueue[node] = candidateQueue.peekitem()[1] - 1
+            if len(finalRoute) > 0:
+                currentNode.set_parent(finalRoute[-1])
             finalRoute.append(currentNode)
+
         elif len(alternativeNodes) < 1:
-            continue
+            if len(finalRoute) > 0:
+                currentNode.set_parent(finalRoute[-1])
+            parents_alternativeNodes, parent_node = checkAlternativeNodes(currentNode, alreadyVisited)
+            while finalRoute[-1] != parent_node:
+                del finalRoute[-1]
+            for node in parents_alternativeNodes:
+                if len(candidateQueue) > 0:
+                    candidateQueue[node] = candidateQueue.peekitem()[1] - 1
+                else:
+                    candidateQueue[node] = node.get_f()
+
+
+def checkAlternativeNodes(currentNode, alreadyVisited=None):
+    parent_node = currentNode.get_parent()
+    parents_alternativeNodes = [node for node in parent_node.get_alternativeNodes() if node not in alreadyVisited]
+
+    if alreadyVisited:
+        while len(parents_alternativeNodes) < 1:
+            parent_node = parent_node.get_parent()
+            parents_alternativeNodes = [node for node in parent_node.get_alternativeNodes() if
+                                        node not in alreadyVisited]
+
+    return parents_alternativeNodes, parent_node
 
 
 def setHeuristic(endNode, currentNode):
@@ -337,28 +383,51 @@ def isBorder(map, row, col):
     return False
 
 
+def isBorderAndCorner(map, row, col):
+    up = (row - 1, col)
+    down = (row + 1, col)
+    left = (row, col - 1)
+    right = (row, col + 1)
+
+    try:
+        if (-1 in up and -1 in left) or (-1 in up and len(map) in right):
+            return True
+        elif (len(map) in down and -1 in left) or (len(map) in down and len(map) in right):
+            return True
+        else:
+            return False
+
+    except (ValueError, IndexError):
+        return True
+
+
 def isCorner(map, row, col):
     up = (row - 1, col)
     down = (row + 1, col)
     left = (row, col - 1)
     right = (row, col + 1)
 
-    if map[down[0]][down[1]] != "X" and map[right[0]][right[1]] != "X" and map[up[0]][up[1]] == "X" and \
-            map[left[0]][
-                left[1]] == "X":
-        return True
-    elif map[down[0]][down[1]] != "X" and map[left[0]][left[1]] != "X" and map[up[0]][up[1]] == "X" and \
-            map[right[0]][
-                right[1]] == "X":
-        return True
-    elif map[up[0]][up[1]] != "X" and map[right[0]][right[1]] != "X" and map[down[0]][down[1]] == "X" and map[left[0]][
-        left[1]] == "X":
-        return True
-    elif map[up[0]][up[1]] != "X" and map[left[0]][left[1]] != "X" and map[down[0]][down[1]] == "X" and map[right[0]][
-        right[1]] == "X":
-        return True
+    try:
+        if map[down[0]][down[1]] != "X" and map[right[0]][right[1]] != "X" and map[up[0]][up[1]] == "X" and \
+                map[left[0]][
+                    left[1]] == "X":
+            return True
+        elif map[down[0]][down[1]] != "X" and map[left[0]][left[1]] != "X" and map[up[0]][up[1]] == "X" and \
+                map[right[0]][
+                    right[1]] == "X":
+            return True
+        elif map[up[0]][up[1]] != "X" and map[right[0]][right[1]] != "X" and map[down[0]][down[1]] == "X" and \
+                map[left[0]][
+                    left[1]] == "X":
+            return True
+        elif map[up[0]][up[1]] != "X" and map[left[0]][left[1]] != "X" and map[down[0]][down[1]] == "X" and \
+                map[right[0]][
+                    right[1]] == "X":
+            return True
 
-    return False
+        return False
+    except (ValueError, IndexError):
+        return True
 
 
 def getNeighbours(map, row, col):
@@ -374,7 +443,6 @@ def getNeighbours(map, row, col):
             continue
 
     return actualNeighbours
-
 
 # def findShortestPath(startNode, endNode):
 #     route = []
