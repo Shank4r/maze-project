@@ -1,7 +1,5 @@
 from Utilities.Node import Node
-from queue import PriorityQueue
 from heapdict import heapdict
-import numpy as np
 
 
 def readMaze(map, start, end):
@@ -96,7 +94,8 @@ def findShortestPath(startNode, endNode):
         currentNode = candidateQueue.popitem()[0]
         alreadyVisited.append(currentNode)
         if currentNode is endNode:
-            currentNode.set_parent(finalRoute[-1])
+            if len(finalRoute) > 0:
+                currentNode.set_parent(finalRoute[-1])
             finalRoute.append(currentNode)
             finalPath = calculateFinalPath(finalRoute)
             finalPath.reverse()
@@ -116,8 +115,10 @@ def findShortestPath(startNode, endNode):
         if len(candidateQueue) > 0:
             nextNode = candidateQueue.peekitem()[0]
         else:
-            currentNode.set_parent(finalRoute[-1])
+            if len(finalRoute) > 0:
+                currentNode.set_parent(finalRoute[-1])
             parents_alternativeNodes, parent_node = checkAlternativeNodes(currentNode, alreadyVisited)
+
             for node in parents_alternativeNodes:
                 node.set_parent(parent_node)
                 candidateQueue[node] = node.get_f()
@@ -129,7 +130,8 @@ def findShortestPath(startNode, endNode):
         currentNode.set_alternativeNodes(alternativeNodes)
 
         if nextNode is endNode and nextNode in currentNode.get_neighbourNodes():
-            currentNode.set_parent(finalRoute[-1])
+            if len(finalRoute) > 0:
+                currentNode.set_parent(finalRoute[-1])
             finalRoute.append(currentNode)
             continue
 
@@ -139,9 +141,8 @@ def findShortestPath(startNode, endNode):
                 currentNode.set_parent(finalRoute[-1])
             finalRoute.append(currentNode)
 
-        elif len(alternativeNodes) == 1:  # hvis ikkje eg har kobling til neste node??
+        elif len(alternativeNodes) == 1:
             if len(candidateQueue) > 1:
-                candidateQueue.popitem()
                 candidateQueue[alternativeNodes[0]] = candidateQueue.peekitem()[1] - 1
                 if len(finalRoute) > 0:
                     currentNode.set_parent(finalRoute[-1])
@@ -149,7 +150,6 @@ def findShortestPath(startNode, endNode):
             continue
 
         elif len(alternativeNodes) >= 1:
-            candidateQueue.popitem()
             for node in alternativeNodes:
                 if node in candidateQueue:
                     candidateQueue[node] = candidateQueue.peekitem()[1] - 1
@@ -161,24 +161,24 @@ def findShortestPath(startNode, endNode):
             if len(finalRoute) > 0:
                 currentNode.set_parent(finalRoute[-1])
             parents_alternativeNodes, parent_node = checkAlternativeNodes(currentNode, alreadyVisited)
-            while finalRoute[-1] != parent_node:
-                del finalRoute[-1]
+
             for node in parents_alternativeNodes:
                 if len(candidateQueue) > 0:
                     candidateQueue[node] = candidateQueue.peekitem()[1] - 1
                 else:
                     candidateQueue[node] = node.get_f()
+            while finalRoute[-1] != parent_node:
+                del finalRoute[-1]
 
 
 def checkAlternativeNodes(currentNode, alreadyVisited=None):
     parent_node = currentNode.get_parent()
     parents_alternativeNodes = [node for node in parent_node.get_alternativeNodes() if node not in alreadyVisited]
 
-    if alreadyVisited:
-        while len(parents_alternativeNodes) < 1:
-            parent_node = parent_node.get_parent()
-            parents_alternativeNodes = [node for node in parent_node.get_alternativeNodes() if
-                                        node not in alreadyVisited]
+    while len(parents_alternativeNodes) < 1:
+        parent_node = parent_node.get_parent()
+        parents_alternativeNodes = [node for node in parent_node.get_alternativeNodes() if
+                                    node not in alreadyVisited]
 
     return parents_alternativeNodes, parent_node
 
@@ -443,27 +443,3 @@ def getNeighbours(map, row, col):
             continue
 
     return actualNeighbours
-
-# def findShortestPath(startNode, endNode):
-#     route = []
-#     temp_queue = PriorityQueue()
-#     alreadyVisited = []
-#     temp_queue.put((startNode.get_heuristic(), startNode))
-#     route.append(startNode)
-#     while temp_queue:
-#         currentNode = temp_queue.get()[1]
-#         if currentNode not in route[-1].get_neighbourNodes() and currentNode is not route[-1]:
-#             continue
-#         alreadyVisited.append(currentNode)
-#         neighbours = currentNode.get_neighbours()
-#         for currentNeighbour in neighbours:
-#             total = currentNeighbour[0].get_heuristic() + currentNeighbour[1]
-#             if total < currentNeighbour[0].get_totalCost():
-#                 currentNeighbour[0].set_totalCost(total)
-#             if currentNeighbour[0] not in alreadyVisited:
-#                 temp_queue.put((currentNeighbour[0].get_totalCost(), currentNeighbour[0]))
-#
-#         if temp_queue.queue[0][1] in currentNode.get_neighbourNodes() and currentNode not in route:
-#             route.append(currentNode)
-#         elif temp_queue.queue[0][1] not in route[-1].get_neighbourNodes():
-#             del route[-1]

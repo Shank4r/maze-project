@@ -24,15 +24,16 @@
             v-show="ready"
             ref="canvas"
             :width="width * cols"
-            :height="heigth * rows"
+            :height="height * rows"
             style="border: 1px solid black; display: block; margin-right: auto; margin-left: auto;"
             @keyup="move"
             tabindex="0"
           >
           </canvas>
-          <v-btn @click="newGame" v-if="!ready">New Game</v-btn>
-          <br />
-          <v-btn @click="solve" v-if="ready">Solve me!</v-btn>
+          <v-btn @click="newGame" class="btn">{{ btn_message }}</v-btn>
+          <v-btn @click="solve" v-if="ready" :disabled="solve_btn" class="btn"
+            >I give up..</v-btn
+          >
         </div>
       </v-flex>
     </v-layout>
@@ -41,15 +42,15 @@
 
 <script>
 import axios from "axios";
-//import testmap from "raw-loader!../assets/testmap5.txt";
-//import testmap from "raw-loader!../assets/new/map1.txt";
 
 export default {
   name: "maze",
   data() {
     return {
+      timer: null,
+      solve_btn: false,
       solution: null,
-      isFinsihed: false,
+      isFinished: false,
       completed: null,
       completeDialog: false,
       ready: false,
@@ -60,9 +61,10 @@ export default {
       end: null,
       finish: null,
       currentPos: null,
+      solve_speed: 500,
       route: "",
       width: 50,
-      heigth: 50,
+      height: 50,
       rows: 10,
       cols: 10,
       WSADMap: {
@@ -85,23 +87,30 @@ export default {
         return this.completed.message;
       }
       return null;
+    },
+    btn_message() {
+      if (this.ready) {
+        return "Generate new maze";
+      }
+      return "START";
     }
   },
   methods: {
     resetGame() {
-      this.isFinsihed = false;
+      this.stopTimer();
+      this.isFinished = false;
       this.map = null;
       this.route = "";
       this.start = null;
       this.end = null;
       this.finish = null;
       this.currentPos = null;
+      this.solve_btn = false;
     },
     newGame() {
       this.completeDialog = false;
       this.resetGame();
       axios.get("/mazebot/random?minSize=10&maxSize=10").then(resp => {
-        //let resp_data = JSON.parse(testmap);
         this.map = resp.data.map;
         this.start = resp.data.startingPosition;
         this.end = resp.data.endingPosition;
@@ -110,15 +119,6 @@ export default {
 
         this.loadGame();
         this.canvas.focus();
-        axios
-          .post("http://localhost:5000/getMaze", {
-            map: this.map,
-            start: this.start,
-            end: this.end
-          })
-          .then(resp => {
-            this.solution = resp.data.path;
-          });
       });
     },
     loadGame() {
@@ -143,20 +143,20 @@ export default {
             this.get_X(col),
             this.get_Y(row),
             this.width,
-            this.heigth
+            this.height
           );
 
           this.context.strokeRect(
             this.get_X(col),
             this.get_Y(row),
             this.width,
-            this.heigth
+            this.height
           );
         }
       }
       this.context.arc(
         this.get_X(this.start[0]) + this.width / 2,
-        this.get_Y(this.start[1]) + this.heigth / 2,
+        this.get_Y(this.start[1]) + this.height / 2,
         20,
         0,
         2 * Math.PI
@@ -169,7 +169,7 @@ export default {
       return col * this.width;
     },
     get_Y(row) {
-      return row * this.heigth;
+      return row * this.height;
     },
     checkMove(position) {
       if (
@@ -185,7 +185,7 @@ export default {
         this.get_X(this.currentPos[0]) + 5,
         this.get_Y(this.currentPos[1]) + 5,
         this.width - 10,
-        this.heigth - 10
+        this.height - 10
       );
     },
     update(direction) {
@@ -207,7 +207,7 @@ export default {
 
         this.context.arc(
           this.get_X(this.currentPos[0]) + this.width / 2,
-          this.get_Y(this.currentPos[1]) + this.heigth / 2,
+          this.get_Y(this.currentPos[1]) + this.height / 2,
           20,
           0,
           2 * Math.PI
@@ -221,12 +221,12 @@ export default {
           this.currentPos[0] === this.end[0] &&
           this.currentPos[1] === this.end[1]
         ) {
-          this.isFinsihed = true;
+          this.isFinished = true;
         }
       }
     },
     move(event) {
-      if (this.isFinsihed) {
+      if (this.isFinished || this.solve_btn) {
         return;
       }
 
@@ -237,7 +237,7 @@ export default {
         this.update(this.arrowMap[key_pressed]);
       }
 
-      if (this.isFinsihed) {
+      if (this.isFinished) {
         this.showCompletionDialog();
       }
     },
@@ -258,23 +258,43 @@ export default {
         });
     },
     solve() {
-      let i = 0;
-      this.loop(i);
+      axios
+        .post("http://localhost:5000/getMaze", {
+          map: this.map,
+          start: this.currentPos,
+          end: this.end
+        })
+        .then(resp => {
+          this.solution = resp.data.path;
+          this.solve_btn = true;
+          let i = 0;
+          this.loop(i);
+        });
     },
     loop: function(i) {
-      setTimeout(() => {
+      this.timer = setTimeout(() => {
         this.update(this.solution[i]);
-        if (this.isFinsihed) {
+        if (this.isFinished) {
           this.showCompletionDialog();
         }
         i++;
         if (i < this.solution.length) {
           this.loop(i);
         }
-      }, 500);
+      }, this.solve_speed);
+    },
+    stopTimer() {
+      if (this.timer) {
+        clearTimeout(this.timer);
+        this.timer = 0;
+      }
     }
   }
 };
 </script>
 
-<style scoped></style>
+<style scoped>
+.btn {
+  margin: 10px;
+}
+</style>
